@@ -1,10 +1,8 @@
 # This example finds and connects to a BLE temperature sensor (e.g. the one in ble_temperature.py).
 
 import bluetooth
-import random
 import struct
 import time
-import micropython
 from micropython import const
 import machine
 import uasyncio
