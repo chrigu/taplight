@@ -9,7 +9,7 @@ C1 = [145, 105, 0]
 C2 = [255, 230, 164]
 
 
-class Light:
+class Leds:
     def __init__(self, number_of_lights, pin):
         self._lights = number_of_lights
         self._pin = machine.Pin(pin)
@@ -105,6 +105,6 @@ if __name__ == "__main__":
     def cb(cycle):
         return False if cycle > 200 else True
 
-    light = Light(60, 27)
+    leds = Leds(60, 27)
     #uasyncio.run(light.do_pulse(callback=cb))
-    uasyncio.run(light.do_rainbow(callback=cb))
+    uasyncio.run(leds.do_rainbow(callback=cb))
