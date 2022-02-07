@@ -59,9 +59,6 @@ def advertising_payload(limited_disc=False, br_edr=False, name=None, services=No
             struct.pack("B", manufacturer)
         )
 
-    print(payload)
-    print(decode_name(payload))
-
     return payload
 
 

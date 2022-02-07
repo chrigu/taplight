@@ -11,14 +11,15 @@ from ble_advertising import advertising_payload
 
 from micropython import const
 import machine
+from leds import Leds
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
 _IRQ_GATTS_INDICATE_DONE = const(20)
 _IRQ_GATTS_WRITE = const(3)
-_IRQ_GATTC_WRITE_DONE = const(17)
 
 _FLAG_WRITE = const(0x0008)
+_FLAG_WRITE_NO_RESPONSE = const(0x0004)
 _FLAG_READ = const(0x0002)
 _FLAG_NOTIFY = const(0x0010)
 _FLAG_INDICATE = const(0x0020)
@@ -28,7 +29,7 @@ _LEDS_UUID = bluetooth.UUID('f281c95f-3947-4879-b851-08c11d22f085')
 # org.bluetooth.characteristic.temperature
 _LEDS_CHAR = (
     bluetooth.UUID('3c110d21-b7a4-4115-889a-77a03fdbcda3'),
-    _FLAG_READ | _FLAG_NOTIFY | _FLAG_INDICATE,
+    _FLAG_WRITE | _FLAG_WRITE_NO_RESPONSE,
 )
 
 _LEDS_SERVICE = (
@@ -40,7 +41,7 @@ _LEDS_SERVICE = (
 
 
 class BLELeds:
-    def __init__(self, ble, name='lightpi'):
+    def __init__(self, ble, number_of_leds, led_pin, name='lightpi'):
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
@@ -49,7 +50,9 @@ class BLELeds:
         self._payload = advertising_payload(
             name=name, services=[_LEDS_UUID]
         )
+        self._write_callback = None
 
+        self.light = Leds(number_of_leds, led_pin)
         self.status = 0
 
         self._advertise()
@@ -59,38 +62,24 @@ class BLELeds:
         if event == _IRQ_CENTRAL_CONNECT:
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
+            print('client connected')
         elif event == _IRQ_GATTS_WRITE:
-            # A client has written to this characteristic or descriptor.
-            conn_handle, attr_handle = data
-        elif event == _IRQ_GATTC_WRITE_DONE:
-            # A gattc_write() has completed.
-            # Note: The value_handle will be zero on btstack (but present on NimBLE).
-            # Note: Status will be zero on success, implementation-specific value otherwise.
-            conn_handle, value_handle, status = data
-            if conn_handle in self._connections and value_handle == self._handle:
-                self.status = self._ble.gatts_read(self._handle)
-                if self._handle:
-                    self._handle()
+            conn_handle, value_handle = data
+            value = self._ble.gatts_read(value_handle)
+            print('got event', value)
+            if value_handle == self._handle and self._write_callback:
+                self._write_callback(value)
         elif event == _IRQ_CENTRAL_DISCONNECT:
             conn_handle, _, _ = data
             self._connections.remove(conn_handle)
             # Start advertising again to allow a new connection.
             self._advertise()
+            print('client disconnected')
         elif event == _IRQ_GATTS_INDICATE_DONE:
             conn_handle, value_handle, status = data
 
-    def set_flow(self, flow, notify=False, indicate=False):
-        # Data is sint16 in degrees Celsius with a resolution of 0.01 degrees Celsius.
-        # Write the local value, ready for a central to read.
-        self._ble.gatts_write(self._handle, struct.pack("<h", int(flow * 100)))
-        if notify or indicate:
-            for conn_handle in self._connections:
-                if notify:
-                    # Notify connected centrals.
-                    self._ble.gatts_notify(conn_handle, self._handle)
-                if indicate:
-                    # Indicate connected centrals.
-                    self._ble.gatts_indicate(conn_handle, self._handle)
+    def on_write(self, callback):
+        self._write_callback = callback
 
     def _advertise(self, interval_us=500000):
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
@@ -98,7 +87,17 @@ class BLELeds:
 
 async def demo():
     ble = bluetooth.BLE()
-    leds = BLELeds(ble)
+    leds = BLELeds(ble, 60, 27)
+
+    def led_cb(_cycle):
+        return leds.status
+
+    def handle_write(data):
+        print(data)
+        leds.status = data
+        uasyncio.create_task(leds.light.do_rainbow(callback=led_cb))
+
+    leds.on_write(callback=handle_write)
 
     while True:
         await uasyncio.sleep_ms(1000)

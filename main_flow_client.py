@@ -8,7 +8,7 @@ import machine
 import uasyncio
 
 from beer_advertising import decode_services, decode_name
-from light import Light
+from leds import Leds
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
@@ -72,7 +72,7 @@ class BLETemperatureCentral:
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
-        self.light = Light(60, 27)
+        self.light = Leds(60, 27)
         self.led = machine.Pin(14, machine.Pin.OUT)
         self.led.on()
         time.sleep(2)
