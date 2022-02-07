@@ -15,7 +15,7 @@ async def main(address):
         print('charuuid', services.characteristics[20].uuid)
         print('charhandle', services.characteristics[20].handle)
         print('props', services.characteristics[20].properties)
-        await client.write_gatt_char(services.characteristics[20], bytearray(b'hei'))
+        await client.write_gatt_char(services.characteristics[20], bytearray(b'0'))
         print('write done')
         await asyncio.sleep(2)
 

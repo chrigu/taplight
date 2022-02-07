@@ -11,6 +11,7 @@ from ble_advertising import advertising_payload
 
 from micropython import const
 import machine
+import gc
 from leds import Leds
 
 _IRQ_CENTRAL_CONNECT = const(1)
@@ -88,14 +89,26 @@ class BLELeds:
 async def demo():
     ble = bluetooth.BLE()
     leds = BLELeds(ble, 60, 27)
+    print(gc.mem_free())
 
     def led_cb(_cycle):
         return leds.status
 
     def handle_write(data):
-        print(data)
-        leds.status = data
-        uasyncio.create_task(leds.light.do_rainbow(callback=led_cb))
+        if data == b'0':
+            status = 0
+        elif data == b'1':
+            fn = leds.light.do_rainbow
+            status = 1
+        elif data == b'2':
+            fn = leds.light.do_pulse
+            status = 1
+        leds.status = status
+
+        if status > 0:
+            uasyncio.create_task(fn(callback=led_cb))
+        gc.collect()
+        print(gc.mem_free())
 
     leds.on_write(callback=handle_write)
 

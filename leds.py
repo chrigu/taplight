@@ -106,5 +106,4 @@ if __name__ == "__main__":
         return False if cycle > 200 else True
 
     leds = Leds(60, 27)
-    #uasyncio.run(light.do_pulse(callback=cb))
     uasyncio.run(leds.do_rainbow(callback=cb))
