@@ -86,7 +86,7 @@ class BLELeds:
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
 
-async def demo():
+async def led_server():
     ble = bluetooth.BLE()
     leds = BLELeds(ble, 60, 27)
     print(gc.mem_free())
@@ -116,4 +116,4 @@ async def demo():
         await uasyncio.sleep_ms(1000)
 
 if __name__ == "__main__":
-    uasyncio.run(demo())
+    uasyncio.run(led_server())

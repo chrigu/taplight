@@ -243,7 +243,7 @@ class BLETemperatureCentral:
         return self._value
 
 
-async def demo():
+async def leds_client():
     ble = bluetooth.BLE()
     central = BLETemperatureCentral(ble)
 
@@ -309,4 +309,4 @@ async def demo():
 
 
 if __name__ == "__main__":
-    uasyncio.run(demo())
+    uasyncio.run(leds_client())
