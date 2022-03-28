@@ -7,6 +7,8 @@ import bluetooth
 import struct
 import time
 from ble_advertising import advertising_payload
+import uasyncio
+from flow import flow
 
 from micropython import const
 import machine
@@ -20,7 +22,7 @@ _FLAG_NOTIFY = const(0x0010)
 _FLAG_INDICATE = const(0x0020)
 
 # org.bluetooth.service.environmental_sensing
-_FLOW_UUID = bluetooth.UUID('cfdee137-c64e-4701-9b2d-b6b323d4d0e3')
+_FLOW_UUID = bluetooth.UUID('cf54bd0b-3380-4b9b-b3ec-371dd8b3a7f2')
 # org.bluetooth.characteristic.temperature
 _FLOW_CHAR = (
     bluetooth.UUID('f05e45d2-3352-4839-8f7a-cf950ae1f09e'),
@@ -33,10 +35,10 @@ _FLOW_SERVICE = (
 )
 
 # org.bluetooth.characteristic.gap.appearance.xml
-
+_ADV_APPEARANCE_GENERIC_THERMOMETER = const(768)
 
 class BLEBeerFlow:
-    def __init__(self, ble, name="pibeerflow"):
+    def __init__(self, ble, name="beerflow"):
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
@@ -79,15 +81,20 @@ class BLEBeerFlow:
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
 
-def demo():
+def handle_pulse_factory(ble_flow):
+    def handle_pulse(pulses):
+        ble_flow.set_flow(pulses, notify=True, indicate=False)
+
+    return handle_pulse
+
+def main():
+    print('starting')
     ble = bluetooth.BLE()
-    flow = BLEBeerFlow(ble)
+    ble_flow = BLEBeerFlow(ble)
+    uasyncio.run(flow(handle_pulse_factory(ble_flow)))
 
     while True:
-        j = flow.switch.value()
-        flow.set_flow(j, notify=True, indicate=False)
-        # Random walk the temperature.
-        time.sleep_ms(1000)
+        time.sleep(1)
 
 if __name__ == "__main__":
-    demo()
+    main()

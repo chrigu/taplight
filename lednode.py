@@ -1,35 +1,18 @@
 import uasyncio
-import bluetooth
+import machine
+
+from leds_client import leds_client
+from leds_server import led_server
 
 
 async def main():
-    ble = bluetooth.BLE()
-    leds = BLELeds(ble, 60, 27)
-    print(gc.mem_free())
+    input = machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_DOWN)
 
-    def led_cb(_cycle):
-        return leds.status
+    if input.value == 1:
+        await leds_client()
+    else:
+        await led_server()
 
-    def handle_write(data):
-        if data == b'0':
-            status = 0
-        elif data == b'1':
-            fn = leds.light.do_rainbow
-            status = 1
-        elif data == b'2':
-            fn = leds.light.do_pulse
-            status = 1
-        leds.status = status
-
-        if status > 0:
-            uasyncio.create_task(fn(callback=led_cb))
-        gc.collect()
-        print(gc.mem_free())
-
-    leds.on_write(callback=handle_write)
-
-    while True:
-        await uasyncio.sleep_ms(1000)
 
 if __name__ == "__main__":
     uasyncio.run(main())

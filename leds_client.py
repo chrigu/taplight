@@ -7,7 +7,7 @@ from micropython import const
 import machine
 import uasyncio
 
-from beer_advertising import decode_services, decode_name
+from ble_advertising import decode_services, decode_name
 from leds import Leds
 
 _IRQ_CENTRAL_CONNECT = const(1)
