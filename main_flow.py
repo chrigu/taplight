@@ -34,8 +34,6 @@ _FLOW_SERVICE = (
     (_FLOW_CHAR,),
 )
 
-# org.bluetooth.characteristic.gap.appearance.xml
-_ADV_APPEARANCE_GENERIC_THERMOMETER = const(768)
 
 class BLEBeerFlow:
     def __init__(self, ble, name="beerflow"):
@@ -50,6 +48,9 @@ class BLEBeerFlow:
         self._advertise()
 
         self.switch = machine.Pin(27, machine.Pin.IN, machine.Pin.PULL_DOWN)
+        self.pulses = 0
+
+    # org.bluetooth.characteristic.gap.appearance.xml
 
     def _irq(self, event, data):
         # Track connections so we can send notifications.
@@ -67,7 +68,8 @@ class BLEBeerFlow:
     def set_flow(self, flow, notify=False, indicate=False):
         # Data is sint16 in degrees Celsius with a resolution of 0.01 degrees Celsius.
         # Write the local value, ready for a central to read.
-        self._ble.gatts_write(self._handle, struct.pack("<h", int(flow * 100)))
+        #self._ble.gatts_write(self._handle, struct.pack("<h", int(flow * 100)))
+        self._ble.gatts_write(self._handle, struct.pack("<h", int(flow)))
         if notify or indicate:
             for conn_handle in self._connections:
                 if notify:
@@ -83,7 +85,11 @@ class BLEBeerFlow:
 
 def handle_pulse_factory(ble_flow):
     def handle_pulse(pulses):
-        ble_flow.set_flow(pulses, notify=True, indicate=False)
+        if pulses != ble_flow.pulses:
+            ble_flow.set_flow(1, notify=True, indicate=False)
+            ble_flow.pulses = pulses
+        else:
+            ble_flow.set_flow(0, notify=True, indicate=False)
 
     return handle_pulse
 

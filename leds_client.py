@@ -51,7 +51,7 @@ _ENV_SENSE_SERVICE = (
 _FLOW_CHAR_UUID = bluetooth.UUID('f05e45d2-3352-4839-8f7a-cf950ae1f09e')
 
 # org.bluetooth.service.environmental_sensing
-_FLOW_UUID = bluetooth.UUID('cfdee137-c64e-4701-9b2d-b6b323d4d0e3')
+_FLOW_UUID = bluetooth.UUID('cf54bd0b-3380-4b9b-b3ec-371dd8b3a7f2')
 # org.bluetooth.characteristic.temperature
 _FLOW_CHAR = (
     _FLOW_CHAR_UUID,
@@ -275,13 +275,16 @@ async def leds_client():
     def on_notify(data):
         print('notify', data)
         nonlocal is_on
-        if data == 1 and not is_on:
+        if data > 0 and not is_on:
+        # if data == 1 and not is_on:
             is_on = True
             central.led.on()
             central.led_status = True
             # uasyncio.create_task(central.light.do_pulse(callback=led_cb))
             uasyncio.create_task(central.light.do_rainbow(callback=led_cb))
         elif data == 0 and is_on:
+
+        # elif data == 0 and is_on:
             is_on = False
             central.led.off()
             central.led_status = False
